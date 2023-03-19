@@ -1,10 +1,11 @@
-import os
-import io
 import argparse as ap
-import tomlkit as tk
-import openai as oa
+import io
+import os
 from base64 import b64decode as b64
-from PIL import Image as img
+
+import openai as oa
+import tomlkit as tk
+from PIL import Image
 
 CONFIG_FILE = "config.toml"
 ALLOWED_SIZES = ["256x256", "512x512", "1024x1024"]
@@ -35,6 +36,7 @@ parser = ap.ArgumentParser(
 parser.add_argument(
     "--prompt", type=str, help="the prompt to use for generating images."
 )
+
 parser.add_argument(
     "--size",
     type=str,
@@ -57,24 +59,24 @@ if args.prompt is None:
 
 oa.api_key = api_key
 print(
-    f"Generating {args.quantity} image(s) with prompt '{args.prompt}' and size {args.size}..."
+    f"Generating {args.quantity} image(s) with prompt '{args.prompt}' and size {args.size}."
 )
 
 for i, _ in enumerate(range(args.quantity)):
     try:
         generation = oa.Image.create(
-            prompt=args.prompt, n=1, size=args.size, response_format="b64_json"
+            prompt=args.prompt, n=args.quantity, size=args.size, response_format="b64_json"
         )
     except Exception as e:
         print(f"Encountered an exception: {e}")
         exit(1)
     if generation["data"]:
         image_data = b64(generation["data"][0]["b64_json"])
-        img = img.open(io.BytesIO(image_data)).convert("RGB")
-        format = img.format.lower() if img.format else "png"
-        file_name = os.path.join(image_path, f"{args.prompt}_image_{i+1}.{format}")
+        img = Image.open(io.BytesIO(image_data)).convert("RGB")
+        image_format = img.format.lower() if img.format else "png"
+        file_name = os.path.join(image_path, f"{args.prompt}_image_{i + 1}.{image_format}")
         with open(file_name, "wb") as image_file:
-            img.save(image_file, format=format.upper())
+            img.save(image_file, format=image_format.upper())
         print(f"Image created and saved.")
     else:
         print(f"No image was generated.")
